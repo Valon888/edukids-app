@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EduKids • Aplikacion edukativ për fëmijë (HTML/CSS/JS)</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles-advanced.css">
+</head>
+<body>
+  <header>
+    <div class="wrap" role="banner" aria-label="EduKids header">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true"><span>🌟</span></div>
+        <div>
+          <h1>EduKids</h1>
+          <div class="sub">Aplikacion edukativ për fëmijë • HTML/CSS/JS • Offline-ready</div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <div class="lang-select-fixed">
+    <select id="langSelect" class="lang-select" aria-label="Zgjidh gjuhën">
+      <option value="sq">🇦🇱 SQ</option>
+      <option value="de">🇩🇪 DE</option>
+      <option value="en">🇬🇧 EN</option>
+    </select>
+  </div>
+  <button id="toggleMode" class="btn toggle-mode-btn">🌙/☀️</button>
+
+  <div class="wrap layout">
+    <nav aria-label="Modulet">
+      <h2>Modulet</h2>
+      <div class="menu" id="menu"></div>
+  <div class="nav-actions">
+        <span class="pill" id="sound-pill" role="switch" aria-checked="true">🔊 Zëri: ON</span>
+        <button class="btn secondary" id="reset-btn" title="Fshij progresin" type="button">♻️ Reset</button>
+      </div>
+  <div class="lang-switch-wrap">
+        <label for="lang-switch" class="pill lang-label">🌐 Gjuha:
+          <select id="lang-switch" class="lang-select">
+            <option value="sq">Shqip</option>
+            <option value="de">Deutsch</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+      </div>
+    </nav>
+
+    <main>
+      <section class="panel" aria-live="polite">
+        <div class="toolbar">
+          <div class="pill">🏆 Progresi: <span id="progress-text">0</span></div>
+          <div class="stars" id="stars"></div>
+        </div>
+        <div id="app" class="grid cols-2"></div>
+      </section>
+      <div class="flash" id="flash"></div>
+    </main>
+  </div>
+
+  <footer>
+    Gati për të mësuar me buzëqeshje 😊 • Ndërtuar me ❤️ në HTML, CSS & JS.
+  </footer>
+    <!-- Feedback Form -->
+    <div id="feedbackBox">
+      <h4 class="feedback-title">💬 Feedback</h4>
+      <textarea id="feedbackInput" rows="3" class="feedback-textarea" placeholder="Shkruani sugjerimin ose vërejtjen tuaj..."></textarea>
+      <div class="feedback-btns">
+        <button id="sendFeedback" class="feedback-send">Dërgo</button>
+        <button id="showFeedbacks" class="feedback-show">Shiko</button>
+      </div>
+      <div id="feedbackMsg" class="feedback-msg"></div>
+    </div>
+
+  <script>
+// EduKids Advanced JS
+// All logic is now in one script for stability and multilingual support
+
+// --- LANGUAGE SWITCHER LOGIC ---
+window.addEventListener('DOMContentLoaded',()=>{
+  const langSel = document.getElementById('langSelect');
+  if(langSel){
+    const savedLang = localStorage.getItem('edukids_lang')||'sq';
+    langSel.value = savedLang;
+    langSel.onchange = ()=>{
+      localStorage.setItem('edukids_lang', langSel.value);
+      location.reload();
+    };
+  }
+});
+
+// --- DARK/LIGHT MODE LOGIC ---
+function setMode(mode) {
+  document.body.classList.toggle('light-mode', mode==='light');
+  localStorage.setItem('edukids_mode', mode);
+  document.getElementById('toggleMode').textContent = mode==='light' ? '☀️' : '🌙';
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  const mode = localStorage.getItem('edukids_mode')||'dark';
+  setMode(mode);
+  document.getElementById('toggleMode').onclick = ()=>{
+    const isLight = document.body.classList.toggle('light-mode');
+    localStorage.setItem('edukids_mode', isLight?'light':'dark');
+    document.getElementById('toggleMode').textContent = isLight ? '☀️' : '🌙';
+  };
+});
+
+// --- FEEDBACK LOGIC ---
+function saveFeedback(msg) {
+  let arr = [];
+  try { arr = JSON.parse(localStorage.getItem('edukids_feedbacks')||'[]'); } catch(e){}
+  arr.push({msg,dt:new Date().toISOString()});
+  localStorage.setItem('edukids_feedbacks', JSON.stringify(arr));
+}
+function getFeedbacks() {
+  try { return JSON.parse(localStorage.getItem('edukids_feedbacks')||'[]'); } catch(e){ return []; }
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  const box = document.getElementById('feedbackBox');
+  const input = document.getElementById('feedbackInput');
+  const sendBtn = document.getElementById('sendFeedback');
+  const showBtn = document.getElementById('showFeedbacks');
+  const msg = document.getElementById('feedbackMsg');
+  sendBtn.onclick = ()=>{
+    const val = input.value.trim();
+    if(val.length<3){ msg.textContent = 'Ju lutem shkruani diçka.'; msg.style.color='#f88'; return; }
+    saveFeedback(val);
+    msg.textContent = 'Faleminderit për feedback!'; msg.style.color='#8f8';
+    input.value = '';
+    setTimeout(()=>msg.textContent='', 3000);
+  };
+  showBtn.onclick = ()=>{
+    const arr = getFeedbacks();
+    if(!arr.length){ msg.textContent = 'Nuk ka feedback të ruajtur.'; msg.style.color='#fff'; return; }
+    msg.innerHTML = '<b>Feedback-et:</b><ul style="max-height:120px;overflow:auto;padding-left:18px;">'+arr.map(f=>`<li>${f.msg} <span style='color:#aaa;font-size:0.8em;'>(${f.dt.slice(0,10)})</span></li>`).join('')+'</ul>';
+  };
+});
+(function(){
+// --- State Initialization ---
+const state = {
+  lang: localStorage.getItem('edukids.lang') || 'sq',
+  current: 'letters',
+  sound: true,
+  progress: JSON.parse(localStorage.getItem('edukids.progress')||'{}'),
+  voices: [],
+  voiceMap: {}
+};
+const $ = (sel, el=document) => el.querySelector(sel)
+const $$ = (sel, el=document) => [...el.querySelectorAll(sel)]
+
+const LANGS = [
+  { code: 'sq', label: 'Shqip', voiceHint: 'sq' },
+  { code: 'de', label: 'Deutsch', voiceHint: 'de' },
+  { code: 'en', label: 'English', voiceHint: 'en' },
+]
+
+const MODULES = [
+  {id:'letters', name:{sq:'Shkronjat',de:'Buchstaben',en:'Letters'}, icon:'🔤'},
+  {id:'numbers', name:{sq:'Numrat',de:'Zahlen',en:'Numbers'}, icon:'🔢'},
+  {id:'colors',  name:{sq:'Ngjyrat',de:'Farben',en:'Colors'}, icon:'🎨'},
+  {id:'shapes',  name:{sq:'Format',de:'Formen',en:'Shapes'}, icon:'🔷'},
+  {id:'memory',  name:{sq:'Memoria',de:'Gedächtnis',en:'Memory'}, icon:'🧠'},
+  {id:'quiz',    name:{sq:'Kuizi',de:'Quiz',en:'Quiz'}, icon:'❓'},
+    {id:'advanced-quiz', name:{sq:'Kuiz i Avancuar',de:'Fortgeschrittenes Quiz',en:'Advanced Quiz'}, icon:'🧩'},
+  {id:'animals-plants', name:{sq:'Kafshë, Bimë, Zvarranikë',de:'Tiere, Pflanzen, Reptilien',en:'Animals, Plants, Reptiles'}, icon:'🦁'},
+  {id:'science', name:{sq:'Shkencë',de:'Wissenschaft',en:'Science'}, icon:'🔬'},
+  {id:'history', name:{sq:'Histori',de:'Geschichte',en:'History'}, icon:'🏺'},
+  {id:'technology', name:{sq:'Teknologji',de:'Technologie',en:'Technology'}, icon:'💻'},
+  {id:'programming', name:{sq:'Programim',de:'Programmierung',en:'Programming'}, icon:'👨‍💻'},
+  {id:'parent-panel', name:{sq:'Panel Prind/Mësues',de:'Eltern/Lehrer Panel',en:'Parent/Teacher Panel'}, icon:'👨‍👩‍👧‍👦'},
+  {id:'about',   name:{sq:'Rreth',de:'Über',en:'About'}, icon:'ℹ️'},
+  {id:'audio-lessons', name:{sq:'Audio Shqip-Gjermanisht',de:'Audio Albanisch-Deutsch',en:'Audio SQ-DE'}, icon:'🎧'},
+  {id:'audio-shqip', name:{sq:'Audio Shqip',de:'Audio Albanisch',en:'Audio SQ'}, icon:'🎤'},
+  {id:'audio-english', name:{sq:'Audio Anglisht',de:'Audio Englisch',en:'Audio English'}, icon:'🎙️'},
+  {id:'learn-languages', name:{sq:'Mëso gjuhë',de:'Sprachen lernen',en:'Learn Languages'}, icon:'🌐'},
+]
+// Modul për Shkencë
+const Science = (()=>{
+  let questions = [];
+  let idx = 0;
+  function shuffle(arr){ return arr.sort(()=>Math.random()-.5); }
+  function loadQuestions(cb){
+    if(typeof scienceQuiz === 'undefined'){
+      const script = document.createElement('script');
+      script.src = 'scienceQuiz.js';
+      script.onload = ()=>{ questions = shuffle(scienceQuiz.slice()); cb(); };
+      document.body.appendChild(script);
+    } else {
+      questions = shuffle(scienceQuiz.slice());
+      cb();
+    }
+  }
+  function draw(){
+    if(!questions.length){ loadQuestions(draw); return; }
+    const app = $('#app'); app.className = '';
+    const q = questions[idx];
+    app.innerHTML = `<div class='card'>
+      <h3>Pyetja ${idx+1}/${questions.length}</h3>
+      <div style='margin:10px 0'>${q.q}</div>
+      <div style='margin:10px 0'><img src='${q.img}' alt='Imazh' style='max-width:120px;max-height:120px;border-radius:8px;border:1px solid #ccc;'></div>
+      <div class='choices'>${q.options.map(o=>`<button class='btn choice' data-v='${o}' type='button'>${o}</button>`).join('')}</div>
+      <div style='margin-top:12px'><button class='btn secondary' id='nextq' type='button'>Pyetje tjetër</button></div>
+      <div id='feedback' style='margin-top:10px;min-height:24px'></div>
+    </div>`;
+    $$('.choice').forEach(b=> b.onclick = ()=>{
+      if(b.dataset.v===q.correct){ beep(true); flash(); incProgress('science'); $('#feedback').innerHTML = `<span style='color:green'>Saktë! ${q.explanation||''}</span>`; speak('Saktë!', state.lang); } else { beep(false); $('#feedback').innerHTML = `<span style='color:red'>Gabim! Përgjigjja e saktë: ${q.correct}. ${q.explanation||''}</span>`; speak('Gabim', state.lang); } $$('.choice').forEach(btn=>btn.disabled=true); });
+    $('#nextq').onclick = ()=>{ idx = (idx+1)%questions.length; draw(); }
+  }
+  return { render: draw }
+})();
+
+// Modul për Histori
+const History = (()=>{
+  let questions = [];
+  let idx = 0;
+  function shuffle(arr){ return arr.sort(()=>Math.random()-.5); }
+  function loadQuestions(cb){
+    if(typeof historyQuiz === 'undefined'){
+      const script = document.createElement('script');
+      script.src = 'historyQuiz.js';
+      script.onload = ()=>{ questions = shuffle(historyQuiz.slice()); cb(); };
+      document.body.appendChild(script);
+    } else {
+      questions = shuffle(historyQuiz.slice());
+      cb();
+    }
+  }
+  function draw(){
+    if(!questions.length){ loadQuestions(draw); return; }
+    const app = $('#app'); app.className = '';
+    const q = questions[idx];
+    app.innerHTML = `<div class='card'>
+      <h3>Pyetja ${idx+1}/${questions.length}</h3>
+      <div style='margin:10px 0'>${q.q}</div>
+      <div style='margin:10px 0'><img src='${q.img}' alt='Imazh' style='max-width:120px;max-height:120px;border-radius:8px;border:1px solid #ccc;'></div>
+      <div class='choices'>${q.options.map(o=>`<button class='btn choice' data-v='${o}' type='button'>${o}</button>`).join('')}</div>
+      <div style='margin-top:12px'><button class='btn secondary' id='nextq' type='button'>Pyetje tjetër</button></div>
+      <div id='feedback' style='margin-top:10px;min-height:24px'></div>
+    </div>`;
+    $$('.choice').forEach(b=> b.onclick = ()=>{
+      if(b.dataset.v===q.correct){ beep(true); flash(); incProgress('history'); $('#feedback').innerHTML = `<span style='color:green'>Saktë! ${q.explanation||''}</span>`; speak('Saktë!', state.lang); } else { beep(false); $('#feedback').innerHTML = `<span style='color:red'>Gabim! Përgjigjja e saktë: ${q.correct}. ${q.explanation||''}</span>`; speak('Gabim', state.lang); } $$('.choice').forEach(btn=>btn.disabled=true); });
+    $('#nextq').onclick = ()=>{ idx = (idx+1)%questions.length; draw(); }
+  }
+  return { render: draw }
+})();
+
+// Modul për Teknologji
+const Technology = (()=>{
+  let questions = [];
+  let idx = 0;
+  function shuffle(arr){ return arr.sort(()=>Math.random()-.5); }
+  function loadQuestions(cb){
+    if(typeof technologyQuiz === 'undefined'){
+      const script = document.createElement('script');
+      script.src = 'technologyQuiz.js';
+      script.onload = ()=>{ questions = shuffle(technologyQuiz.slice()); cb(); };
+      document.body.appendChild(script);
+    } else {
+      questions = shuffle(technologyQuiz.slice());
+      cb();
+    }
+  }
+  function draw(){
+    if(!questions.length){ loadQuestions(draw); return; }
+    const app = $('#app'); app.className = '';
+    const q = questions[idx];
+    app.innerHTML = `<div class='card'>
+      <h3>Pyetja ${idx+1}/${questions.length}</h3>
+      <div style='margin:10px 0'>${q.q}</div>
+      <div style='margin:10px 0'><img src='${q.img}' alt='Imazh' style='max-width:120px;max-height:120px;border-radius:8px;border:1px solid #ccc;'></div>
+      <div class='choices'>${q.options.map(o=>`<button class='btn choice' data-v='${o}' type='button'>${o}</button>`).join('')}</div>
+      <div style='margin-top:12px'><button class='btn secondary' id='nextq' type='button'>Pyetje tjetër</button></div>
+      <div id='feedback' style='margin-top:10px;min-height:24px'></div>
+    </div>`;
+    $$('.choice').forEach(b=> b.onclick = ()=>{
+      if(b.dataset.v===q.correct){ beep(true); flash(); incProgress('technology'); $('#feedback').innerHTML = `<span style='color:green'>Saktë! ${q.explanation||''}</span>`; speak('Saktë!', state.lang); } else { beep(false); $('#feedback').innerHTML = `<span style='color:red'>Gabim! Përgjigjja e saktë: ${q.correct}. ${q.explanation||''}</span>`; speak('Gabim', state.lang); } $$('.choice').forEach(btn=>btn.disabled=true); });
+    $('#nextq').onclick = ()=>{ idx = (idx+1)%questions.length; draw(); }
+  }
+  return { render: draw }
+})();
+
+// Modul për Programim
+const Programming = (()=>{
+  let questions = [];
+  let idx = 0;
+  function shuffle(arr){ return arr.sort(()=>Math.random()-.5); }
+  function loadQuestions(cb){
+    if(typeof programmingQuiz === 'undefined'){
+      const script = document.createElement('script');
+      script.src = 'programmingQuiz.js';
+      script.onload = ()=>{ questions = shuffle(programmingQuiz.slice()); cb(); };
+      document.body.appendChild(script);
+    } else {
+      questions = shuffle(programmingQuiz.slice());
+      cb();
+    }
+  }
+  function draw(){
+    if(!questions.length){ loadQuestions(draw); return; }
+    const app = $('#app'); app.className = '';
+    const q = questions[idx];
+    app.innerHTML = `<div class='card'>
+      <h3>Pyetja ${idx+1}/${questions.length}</h3>
+      <div style='margin:10px 0'>${q.q}</div>
+      <div style='margin:10px 0'><img src='${q.img}' alt='Imazh' style='max-width:120px;max-height:120px;border-radius:8px;border:1px solid #ccc;'></div>
+      <div class='choices'>${q.options.map(o=>`<button class='btn choice' data-v='${o}' type='button'>${o}</button>`).join('')}</div>
+      <div style='margin-top:12px'><button class='btn secondary' id='nextq' type='button'>Pyetje tjetër</button></div>
+      <div id='feedback' style='margin-top:10px;min-height:24px'></div>
+    </div>`;
+    $$('.choice').forEach(b=> b.onclick = ()=>{
+      if(b.dataset.v===q.correct){ beep(true); flash(); incProgress('programming'); $('#feedback').innerHTML = `<span style='color:green'>Saktë! ${q.explanation||''}</span>`; speak('Saktë!', state.lang); } else { beep(false); $('#feedback').innerHTML = `<span style='color:red'>Gabim! Përgjigjja e saktë: ${q.correct}. ${q.explanation||''}</span>`; speak('Gabim', state.lang); } $$('.choice').forEach(btn=>btn.disabled=true); });
+    $('#nextq').onclick = ()=>{ idx = (idx+1)%questions.length; draw(); }
+  }
+  return { render: draw }
+})();
+
+
+// Panel për Prind/Mësues
+const ParentPanel = (()=>({
+  render(){
+    const app = $('#app'); app.className = 'grid cols-2';
+    let progress = JSON.parse(localStorage.getItem('edukids.progress')||'{}');
+    app.innerHTML = `<div class='card'><h3>Progresi i Fëmijës</h3><ul id='progress-list'></ul></div>
+    <div class='card'><h3>Detyra Shtesë</h3><p>Prindi/mësuesi mund të caktojë detyra të reja ose të japë feedback.</p></div>`;
+    const list = document.getElementById('progress-list');
+    list.innerHTML = MODULES.map(m=>`<li>${m.icon} ${m.name.sq}: <b>${progress[`mod.${m.id}.sq`]||0}/5</b></li>`).join('');
+  }
+}))();
+// Modul për kafshë, bimë, zvarranikë me pyetje dhe imazhe
+const AnimalsPlants = (()=>{
+  let questions = [];
+  let idx = 0;
+  function shuffle(arr){ return arr.sort(()=>Math.random()-.5); }
+  function loadQuestions(cb){
+    if(typeof animalsPlantsQuiz === 'undefined'){
+      const script = document.createElement('script');
+      script.src = 'animalsPlantsQuiz.js';
+      script.onload = ()=>{ questions = shuffle(animalsPlantsQuiz.slice()); cb(); };
+      document.body.appendChild(script);
+    } else {
+      questions = shuffle(animalsPlantsQuiz.slice());
+      cb();
+    }
+  }
+  function draw(){
+    if(!questions.length){
+      loadQuestions(draw);
+      return;
+    }
+    const app = $('#app'); app.className = '';
+    const q = questions[idx];
+    app.innerHTML = `<div class='card'>
+      <h3>Pyetja ${idx+1}/${questions.length}</h3>
+      <div style='margin:10px 0'>${q.q}</div>
+      <div style='margin:10px 0'><img src='${q.img}' alt='Imazh' style='max-width:120px;max-height:120px;border-radius:8px;border:1px solid #ccc;'></div>
+      <div class='choices'>${q.options.map(o=>`<button class='btn choice' data-v='${o}' type='button'>${o}</button>`).join('')}</div>
+      <div style='margin-top:12px'><button class='btn secondary' id='nextq' type='button'>Pyetje tjetër</button></div>
+      <div id='feedback' style='margin-top:10px;min-height:24px'></div>
+    </div>`;
+    $$('.choice').forEach(b=> b.onclick = ()=>{
+      if(b.dataset.v===q.correct){
+        beep(true); flash(); incProgress('animals-plants');
+        $('#feedback').innerHTML = `<span style='color:green'>Saktë! ${q.explanation||''}</span>`;
+        speak('Saktë!', state.lang);
+      } else {
+        beep(false);
+        $('#feedback').innerHTML = `<span style='color:red'>Gabim! Përgjigjja e saktë: ${q.correct}. ${q.explanation||''}</span>`;
+        speak('Gabim', state.lang);
+      }
+      $$('.choice').forEach(btn=>btn.disabled=true);
+    });
+    $('#nextq').onclick = ()=>{
+      idx = (idx+1)%questions.length;
+      draw();
+    }
+  }
+  return { render: draw }
+})();
+// Kuiz i Avancuar me kategori dhe vështirësi
+const AdvancedQuiz = (()=>{
+  // Pyetjet nga advancedQuizQuestions
+  let questions = [];
+  let idx = 0;
+  let categories = [];
+  let selectedCat = 'Të gjitha';
+  let minDiff = 1, maxDiff = 4;
+  function shuffle(arr){ return arr.sort(()=>Math.random()-.5); }
+  function loadQuestions(cb){
+    function mergeAll(){
+  let arr = [];
+  if(typeof MEGAQUIZ_QUESTIONS!=='undefined') arr = arr.concat(MEGAQUIZ_QUESTIONS.map(q=>({...q, cat:'Të gjitha'})));
+  return arr;
+    }
+    if(typeof advancedQuizQuestions==='undefined'){
+  function done(){ questions = mergeAll(); cb(); }
+  const s=document.createElement('script'); s.src='megaquiz-questions.js'; s.onload=done; document.body.appendChild(s);
+    } else { questions = mergeAll(); cb(); }
+  }
+  function draw(){
+    if(!questions.length){ loadQuestions(draw); return; }
+    // Gjej kategoritë
+    categories = Array.from(new Set(questions.map(q=>q.cat||'Të gjitha')));
+    // Filtra UI
+    const app = $('#app'); app.className = '';
+    app.innerHTML = `<div class='card' style='margin-bottom:16px'>
+      <div style='display:flex;gap:10px;align-items:center;flex-wrap:wrap'>
+        <label>Kategoria:</label>
+        <select id='catSel'>
+          <option>Të gjitha</option>
+          ${categories.map(c=>`<option${c===selectedCat?' selected':''}>${c}</option>`).join('')}
+        </select>
+        <label>Vështirësia:</label>
+        <select id='minDiff'>${[1,2,3,4].map(d=>`<option${d===minDiff?' selected':''}>${d}</option>`).join('')}</select>
+        <span>–</span>
+        <select id='maxDiff'>${[1,2,3,4].map(d=>`<option${d===maxDiff?' selected':''}>${d}</option>`).join('')}</select>
+        <button class='btn secondary' id='reshuffle'>🔄 Rifiltro</button>
+      </div>
+    </div><div id='advqzone'></div>`;
+    $('#catSel').onchange = e=>{ selectedCat=e.target.value; idx=0; draw(); }
+    $('#minDiff').onchange = e=>{ minDiff=+e.target.value; if(minDiff>maxDiff){maxDiff=minDiff;} draw(); }
+    $('#maxDiff').onchange = e=>{ maxDiff=+e.target.value; if(maxDiff<minDiff){minDiff=maxDiff;} draw(); }
+    $('#reshuffle').onclick = ()=>{ idx=0; draw(); }
+    renderQ();
+    function renderQ(){
+      // filtro sipas kategorisë dhe vështirësisë
+      let pool = questions.filter(q=>(selectedCat==='Të gjitha'||q.cat===selectedCat)&&(q.diff||2)>=minDiff&&(q.diff||2)<=maxDiff);
+      if(!pool.length){ $('#advqzone').innerHTML = `<div class='card'>Nuk ka pyetje për këtë filtër.</div>`; return; }
+      const q = pool[idx%pool.length];
+      $('#advqzone').innerHTML = `<div class='card'>
+        <h3>${q.cat?`[${q.cat}] `:''}Pyetja ${idx+1}/${pool.length}</h3>
+        <div style='margin:10px 0'>${q.q}</div>
+        ${q.img?`<div style='margin:10px 0'><img src='${q.img}' alt='Imazh' style='max-width:120px;max-height:120px;border-radius:8px;border:1px solid #ccc;'></div>`:''}
+        <div class='choices'>${q.options.map(o=>`<button class='btn choice' data-v='${o}' type='button'>${o}</button>`).join('')}</div>
+        <div style='margin-top:12px'><button class='btn secondary' id='nextq' type='button'>Pyetje tjetër</button></div>
+        <div id='feedback' style='margin-top:10px;min-height:24px'></div>
+      </div>`;
+      $$('.choice').forEach(b=> b.onclick = ()=>{
+        if(b.dataset.v===q.correct||b.dataset.v==q.options[q.answer]){
+          beep(true); flash(); incProgress('advanced-quiz');
+          $('#feedback').innerHTML = `<span style='color:green'>Saktë! ${q.explanation||q.explain||''}</span>`;
+          speak('Saktë!', state.lang);
+        } else {
+          beep(false);
+          $('#feedback').innerHTML = `<span style='color:red'>Gabim! Përgjigjja e saktë: ${q.correct||q.options[q.answer]}. ${(q.explanation||q.explain)||''}</span>`;
+          speak('Gabim', state.lang);
+        }
+        $$('.choice').forEach(btn=>btn.disabled=true);
+      });
+      $('#nextq').onclick = ()=>{ idx = (idx+1)%pool.length; renderQ(); }
+    }
+  }
+  return { render: draw }
+})();
+// AudioEnglish module for English audio lessons
+const AudioEnglish = (()=>({
+  render(){
+    const app = $('#app'); app.className='grid cols-2';
+    app.innerHTML = `
+      <div class="card" style="grid-column:1/-1">
+        <h3>Audio Anglisht</h3>
+        <p>Zgjidh një ligjëratë për ta dëgjuar.</p>
+        <div id="audio-english-list"></div>
+      </div>
+    `;
+    // Load audio.js dynamically if not already loaded
+    if(typeof englishAudioFiles === 'undefined'){
+      const script = document.createElement('script');
+      script.src = 'audio.js';
+      script.onload = showAudioList;
+      document.body.appendChild(script);
+    } else {
+      showAudioList();
+    }
+    function showAudioList(){
+      const list = document.getElementById('audio-english-list');
+      if(!list || typeof englishAudioFiles === 'undefined') return;
+      list.innerHTML = '';
+      englishAudioFiles.forEach((file, i) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex'; row.style.alignItems = 'center'; row.style.gap = '10px'; row.style.marginBottom = '8px';
+        const label = document.createElement('span');
+        label.textContent = `Ligjërata ${String(i+1).padStart(3,'0')}`;
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        let rel = file;
+        if(file.includes('audio/')) rel = file.substring(file.indexOf('audio/'));
+        else if(file.match(/EMSQ\d+\.mp3$/i)) rel = 'audio/' + file.match(/EMSQ\d+\.mp3$/i)[0];
+        audio.src = rel;
+        row.appendChild(label);
+        row.appendChild(audio);
+        list.appendChild(row);
+      });
+    }
+  }
+}))();
+// AudioShqip module for Albanian-only audio lessons
+const AudioShqip = (()=>({
+  render(){
+    const app = $('#app'); app.className='grid cols-2';
+    app.innerHTML = `
+      <div class="card" style="grid-column:1/-1">
+        <h3>Audio Shqip</h3>
+        <p>Zgjidh një ligjëratë për ta dëgjuar.</p>
+        <div id="audio-shqip-list"></div>
+      </div>
+    `;
+    // Load audio.js dynamically if not already loaded
+    if(typeof shqipAudioFiles === 'undefined'){
+      const script = document.createElement('script');
+      script.src = 'audio.js';
+      script.onload = showAudioList;
+      document.body.appendChild(script);
+    } else {
+      showAudioList();
+    }
+    function showAudioList(){
+      const list = document.getElementById('audio-shqip-list');
+      if(!list || typeof shqipAudioFiles === 'undefined') return;
+      list.innerHTML = '';
+      shqipAudioFiles.forEach((file, i) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex'; row.style.alignItems = 'center'; row.style.gap = '10px'; row.style.marginBottom = '8px';
+        const label = document.createElement('span');
+        label.textContent = `Ligjërata ${String(i+1).padStart(3,'0')}`;
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        let rel = file;
+        if(file.includes('audio/')) rel = file.substring(file.indexOf('audio/'));
+        else if(file.match(/SQSQ\d+\.MP3$/i)) rel = 'audio/' + file.match(/SQSQ\d+\.MP3$/i)[0];
+        audio.src = rel;
+        row.appendChild(label);
+        row.appendChild(audio);
+        list.appendChild(row);
+      });
+    }
+  }
+}))();
+
+const TRANSLATE = {
+  say: {sq:'Thuaje', de:'Sag es', en:'Say it'},
+  prev: {sq:'Mbrapa', de:'Zurück', en:'Prev'},
+  next: {sq:'Para', de:'Weiter', en:'Next'},
+  quick: {sq:'Ushtrim i shpejtë', de:'Schnelle Übung', en:'Quick Exercise'},
+  pickLetter: {sq:'Zgjidh shkronjën e duhur:', de:'Wähle den richtigen Buchstaben:', en:'Pick the correct letter:'},
+  correct: {sq:'Saktë!', de:'Richtig!', en:'Correct!'},
+  tryAgain: {sq:'Provo përsëri', de:'Versuch es nochmal', en:'Try again'},
+  progress: {sq:'Progresi', de:'Fortschritt', en:'Progress'},
+  reset: {sq:'Fshij progresin', de:'Fortschritt löschen', en:'Reset progress'},
+  soundOn: {sq:'Zëri: ON', de:'Ton: AN', en:'Sound: ON'},
+  soundOff: {sq:'Zëri: OFF', de:'Ton: AUS', en:'Sound: OFF'},
+}
+function t(key){
+  return TRANSLATE[key]?.[state.lang] || key
+}
+function loadVoices(){
+  state.voices = window.speechSynthesis.getVoices()
+  state.voiceMap = {}
+  for(const lang of LANGS){
+    const v = state.voices.find(v=>v.lang.startsWith(lang.voiceHint) && !v.name.toLowerCase().includes('google') && !v.name.toLowerCase().includes('fictitious'))
+      || state.voices.find(v=>v.lang.startsWith(lang.voiceHint))
+    state.voiceMap[lang.code] = v
+  }
+}
+
+function speak(text, lang){
+  if(!state.sound) return;
+  loadVoices();
+  const voice = state.voiceMap[lang] || state.voices[0];
+  if(voice){
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.voice = voice;
+    utter.lang = voice.lang;
+    utter.rate = .98; utter.pitch = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  }
+}
+
+function beep(success=true){
+  if(!state.sound) return
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)()
+    const o = ctx.createOscillator(); const g = ctx.createGain()
+    o.type = 'sine'; o.frequency.value = success? 880 : 220
+    g.gain.value = .0001; g.gain.exponentialRampToValueAtTime(.2, ctx.currentTime+.01)
+    o.connect(g); g.connect(ctx.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + (success? .15 : .25))
+    o.stop(ctx.currentTime + (success? .16 : .26))
+  }catch(e){}
+}
+
+function flash(){
+  const f = $('#flash'); f.classList.add('show');
+  setTimeout(()=> f.classList.remove('show'), 350)
+}
+
+function incProgress(key){
+  const k = `mod.${key}.${state.lang}`
+  const val = (state.progress[k]||0) + 1
+  state.progress[k] = Math.min(val, 5)
+  localStorage.setItem('edukids.progress', JSON.stringify(state.progress))
+  renderStars(key)
+  renderProgressText()
+}
+function getProg(key){ return state.progress[`mod.${key}.${state.lang}`] || 0 }
+
+function renderStars(key){
+  const c = $('#stars'); c.innerHTML = ''
+  const n = getProg(key)
+  for(let i=0;i<5;i++){
+    const d = document.createElement('div')
+    d.className = 'star' + (i < n ? ' win' : '')
+    d.innerHTML = i < n ? '★' : '☆'
+    c.appendChild(d)
+  }
+}
+function renderProgressText(){
+  const sum = MODULES.map(m => getProg(m.id)).reduce((a,b)=>a+b,0)
+  $('#progress-text').textContent = sum
+}
+
+// --- Modules ---
+const Letters = (()=>{
+  const pairs = [
+    ['A','🍎'],['B','🐝'],['C','🐱'],['Ç','🌶️'],['D','🐶'],['E','🐘'],['Ë','🧀'],['F','🐸'],['G','🦒'],['H','🏠'],
+    ['I','🍦'],['J','🧩'],['K','🦘'],['L','🦁'],['M','🌙'],['N','🐳'],['O','🦉'],['P','🦜'],['Q','🧀'],['R','🐰'],
+    ['S','⭐'],['T','🐯'],['U','☂️'],['V','🎻'],['X','❌'],['Y','🛳️'],['Z','🦓']
+  ]
+  let idx = 0
+  function draw(){
+    const [letter, emoji] = pairs[idx]
+    const app = $('#app'); app.className = 'grid cols-2'
+    app.innerHTML = `
+      <div class="card center" aria-label="Shkronja aktuale">
+        <div class="emoji" aria-hidden="true">${emoji}</div>
+        <div class="title-lg" style="font-weight:800">${letter}</div>
+        <div style="display:flex; gap:10px; margin-top:10px">
+          <button class="btn" id="say" type="button">🔈 ${t('say')}</button>
+          <button class="btn secondary" id="prev" type="button">⬅️</button>
+          <button class="btn secondary" id="next" type="button">➡️</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>${t('quick')}</h3>
+        <p>${t('pickLetter')}</p>
+        <div class="choices" id="choices"></div>
+      </div>`
+
+    $('#say').onclick = ()=>{ speak(`Shkronja ${letter}`, state.lang) }
+    $('#prev').onclick = ()=>{ idx = (idx - 1 + pairs.length) % pairs.length; draw() }
+    $('#next').onclick = ()=>{ idx = (idx + 1) % pairs.length; draw() }
+
+    const options = new Set([letter])
+    while(options.size < 4){
+      options.add(pairs[Math.floor(Math.random()*pairs.length)][0])
+    }
+    const shuffled = [...options].sort(()=> Math.random()-.5)
+    const wrap = $('#choices')
+    shuffled.forEach(opt =>{
+      const b = document.createElement('button'); b.className = 'btn choice'; b.textContent = opt
+      b.type = 'button';
+      b.onclick = ()=>{
+        if(opt === letter){
+          beep(true); flash(); incProgress('letters'); speak(t('correct'), state.lang)
+        } else { beep(false); speak(t('tryAgain'), state.lang) }
+      }
+      wrap.appendChild(b)
+    })
+  }
+  return { render: draw }
+})()
+
+const Numbers = (()=>{
+  let current = 1
+  function dots(n){
+    return `<div class="card center" style="gap:8px">
+      <div aria-hidden="true" style="font-size:48px">${'• '.repeat(n)}</div>
+      <div class="pill">Sa pika numëron?</div>
+    </div>`
+  }
+  function draw(){
+    const app = $('#app'); app.className = 'grid cols-2'
+    const n = Math.floor(Math.random()*9)+1
+    current = n
+    const options = new Set([n])
+    while(options.size<4){ options.add(Math.floor(Math.random()*9)+1) }
+    const shuffled = [...options].sort(()=>Math.random()-.5)
+    app.innerHTML = dots(n) + `
+      <div class="card"><h3>Zgjidh numrin e saktë</h3>
+        <div class="choices">${shuffled.map(v=>`<button class="btn choice" data-v="${v}" type="button">${v}</button>`).join('')}</div>
+        <div style="margin-top:12px; display:flex; gap:8px">
+          <button class="btn" id="hear" type="button">🔈 ${t('say')}</button>
+          <button class="btn secondary" id="again" type="button">Ndrysho ushtrim</button>
+        </div>
+      </div>`
+    $('#hear').onclick = ()=> speak(`Numri ${n}`, state.lang)
+    $('#again').onclick = draw
+    $$('.choice').forEach(b=> b.onclick = ()=>{
+      const v = Number(b.dataset.v)
+      if(v===current){ beep(true); flash(); incProgress('numbers'); speak('Shumë mirë!', state.lang) }
+      else { beep(false); speak('Jo, mendo edhe pak', state.lang) }
+    })
+  }
+  return { render: draw }
+})()
+
+const Colors = (()=>{
+  const colors = [
+    {name:'e kuqe', val:'#ef4444'}, {name:'e gjelbër', val:'#22c55e'}, {name:'e kaltër', val:'#3b82f6'},
+    {name:'e verdhë', val:'#f59e0b'}, {name:'rozë', val:'#ec4899'}, {name:'portokalli', val:'#fb923c'},
+    {name:'e purpurt', val:'#8b5cf6'}, {name:'kafe', val:'#8b5e3c'}, {name:'gri', val:'#9ca3af'},
+    {name:'zi', val:'#000000'}, {name:'bardhë', val:'#ffffff'}
+  ]
+  function draw(){
+    const app = $('#app'); app.className = 'grid cols-3'
+    const target = colors[Math.floor(Math.random()*colors.length)]
+    app.innerHTML = `
+      <div class="card" style="grid-column:1/-1">
+        <h3>Gjej ngjyrën: <span class="pill">${target.name}</span></h3>
+      </div>`
+    colors.sort(()=>Math.random()-.5).slice(0,9).forEach(c=>{
+      const div = document.createElement('div'); div.className='card'
+      div.innerHTML = `<div class="swatch" style="background:${c.val}"></div>
+                       <div class="pill" style="background:transparent;color:${c.val==='#000000'?'#e5e7eb':'#cbd5e1'}">&nbsp;</div>`
+      div.setAttribute('role','button'); div.tabIndex=0
+      div.onclick = ()=>{
+        if(c.name===target.name){ beep(true); flash(); incProgress('colors'); speak(`Bravo! ${c.name}`, state.lang); draw() }
+        else { beep(false); speak('Gabim, provo një tjetër', state.lang) }
+      }
+      app.appendChild(div)
+    })
+  }
+  return { render: draw }
+})()
+
+const Shapes = (()=>{
+  const shapes = [
+    {id:'rreth', label:'rreth', svg:`<svg viewBox="0 0 100 100" aria-label="rreth"><circle cx="50" cy="50" r="40" fill="#60a5fa"/></svg>`},
+    {id:'katror', label:'katror', svg:`<svg viewBox="0 0 100 100" aria-label="katror"><rect x="20" y="20" width="60" height="60" rx="8" fill="#22c55e"/></svg>`},
+    {id:'trekendesh', label:'trekëndësh', svg:`<svg viewBox="0 0 100 100" aria-label="trekëndësh"><polygon points="50,15 90,85 10,85" fill="#f59e0b"/></svg>`},
+    {id:'yll', label:'yll', svg:`<svg viewBox="0 0 100 100" aria-label="yll"><polygon points="50,10 61,38 90,38 66,56 75,85 50,68 25,85 34,56 10,38 39,38" fill="#f472b6"/></svg>`},
+    {id:'zemer', label:'zemër', svg:`<svg viewBox="0 0 100 100" aria-label="zemër"><path d="M50 85s-30-18-30-40a18 18 0 0 1 30-13A18 18 0 0 1 80 45c0 22-30 40-30 40z" fill="#a78bfa"/></svg>`},
+  ]
+  function draw(){
+    const app = $('#app'); app.className = 'grid cols-3'
+    const target = shapes[Math.floor(Math.random()*shapes.length)]
+    const ask = document.createElement('div')
+    ask.className = 'card'; ask.style.gridColumn='1/-1'
+    ask.innerHTML = `<h3>Kliko formën: <span class="pill">${target.label}</span></h3>`
+    app.innerHTML = ''
+    app.appendChild(ask)
+    shapes.sort(()=>Math.random()-.5).forEach(s=>{
+      const c = document.createElement('div'); c.className='card center'
+      c.innerHTML = `<div class="shape">${s.svg}</div>`
+      c.onclick = ()=>{
+        if(s.id===target.id){ beep(true); flash(); incProgress('shapes'); speak('Saktë!', state.lang); draw() }
+        else { beep(false); speak('Jo, e gabuar', state.lang) }
+      }
+      app.appendChild(c)
+    })
+  }
+  return { render: draw }
+})()
+
+const Memory = (()=>{
+  const pool = ['🐶','🐱','🐭','🐹','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷']
+  let open = [], matched = 0
+  function draw(){
+    const app = $('#app'); app.className = ''
+    const board = document.createElement('div'); board.className='card'
+    const picks = pool.sort(()=>Math.random()-.5).slice(0,8)
+    const cards = [...picks, ...picks].sort(()=>Math.random()-.5)
+    board.innerHTML = `<h3>Gjeje çiftin e saktë</h3><div class="board" id="board"></div>`
+    app.innerHTML = ''
+    app.appendChild(board)
+    const b = $('#board')
+    cards.forEach((emo,i)=>{
+      const tile = document.createElement('div'); tile.className='flip'; tile.dataset.index=i; tile.dataset.emo=emo; tile.setAttribute('data-state','closed')
+      tile.innerHTML = `<div class="flip-inner"><div class="face front"></div><div class="face back">${emo}</div></div>`
+      tile.onclick = ()=> turn(tile)
+      b.appendChild(tile)
+    })
+    open=[]; matched=0
+  }
+  function turn(tile){
+    if(tile.dataset.state!=='closed' || open.length===2) return
+    tile.setAttribute('data-state','open');
+    tile.classList.add('flip-animate');
+    setTimeout(()=>tile.classList.remove('flip-animate'), 400);
+    open.push(tile)
+    if(open.length===2){
+      const [a,b] = open
+      if(a.dataset.emo===b.dataset.emo){
+        beep(true); flash(); incProgress('memory'); matched+=2
+        setTimeout(()=>{a.setAttribute('data-state','matched'); b.setAttribute('data-state','matched'); open=[];}, 200)
+      } else {
+        beep(false)
+        setTimeout(()=>{a.setAttribute('data-state','closed'); b.setAttribute('data-state','closed'); open=[]}, 500)
+      }
+    }
+  }
+  return { render: draw }
+})()
+
+const Quiz = (()=>{
+  const bank = [
+    // Shkronja
+    {q:'Cila është kjo shkronjë?', gen:()=>{
+      const letters = ['A','B','C','Ç','D','E','Ë','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','X','Y','Z']
+      const L = letters[Math.floor(Math.random()*letters.length)]
+      const opts = new Set([L]); while(opts.size<4) opts.add(letters[Math.floor(Math.random()*letters.length)])
+      return {view:`<div class="title-lg center">${L}</div>`, correct:L, options:[...opts]}
+    }},
+    // Numra
+    {q:'Sa është numri?', gen:()=>{
+      const n = Math.floor(Math.random()*20)+1
+      const opts = new Set([n]); while(opts.size<4) opts.add(Math.floor(Math.random()*20)+1)
+      return {view:`<div class="title-lg center">${'• '.repeat(n)}</div>`, correct:String(n), options:[...opts].map(String)}
+    }},
+    // Ngjyra
+    {q:'Gjej ngjyrën', gen:()=>{
+      const colors = ['e kuqe','e gjelbër','e kaltër','e verdhë','rozë','portokalli','e purpurt','kafe','gri','zi','bardhë']
+      const c = colors[Math.floor(Math.random()*colors.length)]
+      return {view:`<div class="pill">${c}</div>`, correct:c, options:colors.sort(()=>Math.random()-.5)}
+    }},
+    // Forma
+    {q:'Gjej formën', gen:()=>{
+      const shapes = ['rreth','katror','trekëndësh','yll','zemër']
+      const s = shapes[Math.floor(Math.random()*shapes.length)]
+      return {view:`<div class="pill">${s}</div>`, correct:s, options:shapes.sort(()=>Math.random()-.5)}
+    }},
+    // Fjalë të reja (shqip-anglisht-gjermanisht)
+    {q:'Cila është përkthimi i fjalës?', gen:()=>{
+      const words = [
+        {sq:'mollë',en:'apple',de:'Apfel'},
+        {sq:'libër',en:'book',de:'Buch'},
+        {sq:'dritë',en:'light',de:'Licht'},
+        {sq:'ujë',en:'water',de:'Wasser'},
+        {sq:'shok',en:'friend',de:'Freund'},
+        {sq:'kafshë',en:'animal',de:'Tier'},
+        {sq:'diell',en:'sun',de:'Sonne'},
+        {sq:'fëmijë',en:'child',de:'Kind'},
+        {sq:'shtëpi',en:'house',de:'Haus'},
+        {sq:'pemë',en:'tree',de:'Baum'}
+      ];
+    const lang = ['sq','en','de'][Math.floor(Math.random()*3)];
+    const w = words[Math.floor(Math.random()*words.length)];
+    let qLang = lang, aLang = lang==='sq' ? 'en' : (lang==='en' ? 'de' : 'sq');
+    return {
+      view: `<div class="pill">${w[qLang]}</div>`,
+      correct: w[aLang],
+      options: words.sort(()=>Math.random()-.5).slice(0,4).map(word => word[aLang])
+    };
+  }},
+  // Teste Spanjisht-Shqip nga 50languages.com
+  {q:'Si përkthehet "unё dhe ti" në spanjisht?', gen:()=>({view:'', correct:'y tú', options:['y tú','yo','nosotros','vosotros']})},
+  {q:'Si përkthehet "Dita e pestё ёshtё e premtja." në spanjisht?', gen:()=>({view:'', correct:'El quinto test es el viernes', options:['El quinto test es el viernes','Hoy es viernes','El viernes es el quinto día','Viernes es el día cinco']})},
+  {q:'Si përkthehet "Sot ёshtё ftohtё." në spanjisht?', gen:()=>({view:'', correct:'Hoy hace frío', options:['Hoy hace frío','Hace calor','Hoy es frío','Hoy está frío']})},
+  {q:'Si përkthehet "A frekuentoni ndonjё kurs gjuhe?" në spanjisht?', gen:()=>({view:'', correct:'Está usted tomando un curso de idiomas?', options:['Está usted tomando un curso de idiomas?','Estudia usted idiomas?','Está usted en clase de idiomas?','Toma usted un curso de español?']})},
+  {q:'Si përkthehet "Dua njё çaj me limon." në spanjisht?', gen:()=>({view:'', correct:'Querría un té con limón', options:['Querría un té con limón','Quiero un té con leche','Quiero un café con limón','Querría un té sin limón']})},
+  {q:'Si përkthehet "Kur do tё ulemi nё tokё?" në spanjisht?', gen:()=>({view:'', correct:'¿Cuándo aterrizamos?', options:['¿Cuándo aterrizamos?','¿Cuándo salimos?','¿Cuándo llegamos?','¿Cuándo despegamos?']})},
+  {q:'Si përkthehet "Ku ёshtё kёshtjella?" në spanjisht?', gen:()=>({view:'', correct:'¿Dónde está el castillo?', options:['¿Dónde está el castillo?','¿Dónde está la iglesia?','¿Dónde está el museo?','¿Dónde está la casa?']})},
+  {q:'Si përkthehet "Të duhen shami hundёsh, sapun dhe njё gёrshёrё thonjsh." në spanjisht?', gen:()=>({view:'', correct:'Tú necesitas pañuelos, jabón y unas tijeras de manicura', options:['Tú necesitas pañuelos, jabón y unas tijeras de manicura','Tú necesitas jabón y champú','Tú necesitas pañuelos y jabón','Tú necesitas tijeras y jabón']})},
+  {q:'Si përkthehet "Kë po ndihmoni?" në spanjisht?', gen:()=>({view:'', correct:'¿A quién estás ayudando?', options:['¿A quién estás ayudando?','¿A quién ves?','¿A quién llamas?','¿A quién buscas?']})},
+  {q:'Si përkthehet "A keni rezervuar një tavolinë?" në spanjisht?', gen:()=>({view:'', correct:'¿Has reservado una mesa?', options:['¿Has reservado una mesa?','¿Has pedido la cuenta?','¿Has rezervuar el hotel?','¿Has rezervuar el taxi?']})},
+  {q:'Cila nuk është nga grupi?', gen:()=>{
+    const sets = [
+      {opts:['mollë','dardhë','banane','makinë'], correct:'makinë'},
+      {opts:['qen','mace','peshk','libër'], correct:'libër'},
+      {opts:['blu','kuqe','jeshile','kafshë'], correct:'kafshë'},
+      {opts:['yll','rreth','katror','kafshë'], correct:'kafshë'},
+    ];
+    const s = sets[Math.floor(Math.random()*sets.length)];
+    return {view:`<div class="pill">${s.opts.join(', ')}</div>`, correct:s.correct, options:s.opts.sort(()=>Math.random()-.5)}
+  }},
+    // Matematikë e thjeshtë
+    {q:'Sa është shuma?', gen:()=>{
+      const a = Math.floor(Math.random()*10)+1, b = Math.floor(Math.random()*10)+1;
+      const correct = a+b;
+      const options = [correct, correct+1, correct-1, correct+2].sort(()=>Math.random()-.5);
+      return {view:`<div class="pill">${a} + ${b} = ?</div>`, correct:String(correct), options:options.map(String)}
+    }},
+    // Radhitje: Vendos numrat në rendin e duhur
+    {q:'Cili është numri që vjen pas?', gen:()=>{
+      const n = Math.floor(Math.random()*19)+1;
+      const options = [n+1, n, n+2, n-1].filter(x=>x>0).sort(()=>Math.random()-.5);
+      return {view:`<div class="pill">${n}</div>`, correct:String(n+1), options:options.map(String)}
+    }},
+    // Memorie vizuale: Çfarë mungon?
+    {q:'Çfarë mungon?', gen:()=>{
+      const all = ['A','B','C','D'];
+      const missing = all[Math.floor(Math.random()*all.length)];
+      const shown = all.filter(x=>x!==missing).join(', ');
+      return {view:`<div class="pill">${shown}</div>`, correct:missing, options:all.sort(()=>Math.random()-.5)}
+    }},
+  ];
+  function draw(){
+    const app = $('#app'); app.className = ''
+    const card = document.createElement('div'); card.className='card'
+    const item = bank[Math.floor(Math.random()*bank.length)]
+    const gen = item.gen()
+    card.innerHTML = `<h3>${item.q}</h3>
+      <div style="margin:10px 0">${gen.view}</div>
+      <div class="choices">${gen.options.map(o=>`<button class="btn choice" data-v="${o}" type="button">${o}</button>`).join('')}</div>
+      <div style="margin-top:12px"><button class="btn secondary" id="nextq" type="button">Pyetje tjetër</button></div>`
+    app.innerHTML = ''
+    app.appendChild(card)
+    $$('.choice', card).forEach(b=> b.onclick = ()=>{
+      if(b.dataset.v===String(gen.correct)){
+        beep(true); flash(); incProgress('quiz'); speak('Bravo!', state.lang); draw()
+      } else { beep(false); speak('Gabim', state.lang) }
+    })
+    $('#nextq').onclick = draw
+  }
+  return { render: draw }
+})()
+
+const About = (()=>({
+  render(){
+    const app = $('#app'); app.className='grid cols-2'
+    app.innerHTML = `
+      <div class="card">
+        <h3>Si funksionon?</h3>
+        <p>Ky është një aplikacion edukativ, që punon edhe offline. Zgjidh një modul nga menuja majtas dhe fillo lojën! Çdo përgjigje e saktë të jep një ⭐ deri në 5 yje për modul.</p>
+        <ul>
+          <li>🔈 Zëri mund të ndizet/fiket nga <em>Zëri</em> në menu.</li>
+          <li>♻️ <em>Reset</em> fshin progresin.</li>
+          <li>⚠️ Tip: për rezultate më të mira, përdor ekran të plotë dhe zë të lartë.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Privatësia</h3>
+        <p>Progresi ruhet vetëm në pajisjen tënde (<code>localStorage</code>). Nuk ka serverë apo të dhëna të jashtme.</p>
+        <p>Ndërtuar me HTML, CSS dhe JavaScript të pastër. 😊</p>
+      </div>`
+  }
+}))()
+
+
+const LearnLanguages = (()=>({
+  render(){
+    const app = $('#app'); app.className='grid cols-2'
+    app.innerHTML = `
+      <div class="card">
+        <h3>Mëso fjalë të thjeshta në gjuhë të ndryshme</h3>
+        <ul>
+          <li><b>Shqip</b>: përshëndetje, faleminderit, po, jo</li>
+          <li><b>Anglisht</b>: hello, thank you, yes, no</li>
+          <li><b>Gjermanisht</b>: hallo, danke, ja, nein</li>
+          <li><b>Spanjisht</b>: hola, gracias, sí, no</li>
+          <li><b>Frëngjisht</b>: bonjour, merci, oui, non</li>
+          <li><b>Italisht</b>: ciao, grazie, sì, no</li>
+        </ul>
+        <p>Zgjidh një fjalë për të dëgjuar shqiptimin në gjuhën përkatëse.</p>
+      </div>
+      <div class="card">
+        <h3>Fjalë bazë</h3>
+        <div class="choices" id="lang-words"></div>
+      </div>`
+    const words = [
+      {sq:'përshëndetje',en:'hello',de:'hallo',es:'hola',fr:'bonjour',it:'ciao'},
+      {sq:'faleminderit',en:'thank you',de:'danke',es:'gracias',fr:'merci',it:'grazie'},
+      {sq:'po',en:'yes',de:'ja',es:'sí',fr:'oui',it:'sì'},
+      {sq:'jo',en:'no',de:'nein',es:'no',fr:'non',it:'no'}
+    ];
+    const langs = [
+      {code:'sq',label:'Shqip'},
+      {code:'en',label:'Anglisht'},
+      {code:'de',label:'Gjermanisht'},
+      {code:'es',label:'Spanjisht'},
+      {code:'fr',label:'Frëngjisht'},
+      {code:'it',label:'Italisht'}
+    ];
+    const container = document.getElementById('lang-words');
+    if(container){
+      words.forEach(w=>{
+        const row = document.createElement('div');
+        row.style.display = 'flex'; row.style.gap = '8px'; row.style.marginBottom = '6px';
+        langs.forEach(lg=>{
+          const btn = document.createElement('button');
+          btn.className = 'btn choice';
+          btn.textContent = w[lg.code] + ' (' + lg.label + ')';
+          btn.onclick = ()=>{
+            if(window.speechSynthesis){
+              const utter = new SpeechSynthesisUtterance(w[lg.code]);
+              utter.lang = lg.code==='sq'?'sq-AL':lg.code==='en'?'en-US':lg.code==='de'?'de-DE':lg.code==='es'?'es-ES':lg.code==='fr'?'fr-FR':'it-IT';
+              window.speechSynthesis.speak(utter);
+            }
+          };
+          row.appendChild(btn);
+        });
+        container.appendChild(row);
+      });
+    }
+  }
+}))();
+
+const AudioLessons = (()=>({
+  render(){
+    const app = $('#app'); app.className='grid cols-2';
+    app.innerHTML = `
+      <div class="card" style="grid-column:1/-1">
+        <h3>Audio Shqip-Gjermanisht</h3>
+        <p>Zgjidh një mësim për ta dëgjuar.</p>
+        <div id="audio-list"></div>
+      </div>
+    `;
+    // Load audio.js dynamically if not already loaded
+    if(typeof audioFiles === 'undefined'){
+      const script = document.createElement('script');
+      script.src = 'audio.js';
+      script.onload = showAudioList;
+      document.body.appendChild(script);
+    } else {
+      showAudioList();
+    }
+    function showAudioList(){
+      const list = document.getElementById('audio-list');
+      if(!list || typeof audioFiles === 'undefined') return;
+      list.innerHTML = '';
+      audioFiles.forEach((file, i) => {
+        const row = document.createElement('div');
+        row.style.display = 'flex'; row.style.alignItems = 'center'; row.style.gap = '10px'; row.style.marginBottom = '8px';
+        const label = document.createElement('span');
+        label.textContent = `Mësimi ${String(i+1).padStart(3,'0')}`;
+        const audio = document.createElement('audio');
+        audio.controls = true;
+        // Prefer relative path if file is in audio/
+        let rel = file;
+        if(file.includes('audio/')) rel = file.substring(file.indexOf('audio/'));
+        else if(file.match(/SQDE\d+\.mp3$/)) rel = 'audio/' + file.match(/SQDE\d+\.mp3$/)[0];
+        audio.src = rel;
+        row.appendChild(label);
+        row.appendChild(audio);
+        list.appendChild(row);
+      });
+    }
+  }
+}))();
+
+const shqipAudioFiles = [
+  "audio/SQSQ001.MP3",
+  "audio/SQSQ002.MP3",
+  // ...
+  "audio/SQSQ099.MP3",
+  "audio/SQSQ100.MP3"
+];
+
+const Registry = {
+  letters:Letters, numbers:Numbers, colors:Colors, shapes:Shapes, memory:Memory, quiz:Quiz, 'advanced-quiz':AdvancedQuiz, 'animals-plants':AnimalsPlants,
+  science:Science, history:History, technology:Technology, programming:Programming, 'parent-panel':ParentPanel,
+  about:About, 'learn-languages':LearnLanguages, 'audio-lessons':AudioLessons, 'audio-shqip':AudioShqip, 'audio-english':AudioEnglish
+}
+
+function renderMenu() {
+  const m = $('#menu'); m.innerHTML = ''
+  MODULES.forEach(mod =>{
+    const btn = document.createElement('button')
+    btn.innerHTML = `${mod.icon} ${mod.name[state.lang]} <span class="badge">${getProg(mod.id)}/5</span>`
+    btn.setAttribute('data-mod', mod.id)
+    if(mod.id===state.current) btn.setAttribute('aria-current','page')
+    btn.onclick = ()=> navigate(mod.id)
+    m.appendChild(btn)
+  })
+}
+function navigate(id){
+  state.current = id
+  renderMenu()
+  renderStars(id)
+  renderProgressText()
+  Registry[id].render()
+}
+
+// --- UI Language Switcher ---
+const langSel = $('#lang-switch')
+if(langSel){
+  langSel.value = state.lang
+  langSel.onchange = e => {
+    state.lang = langSel.value
+    localStorage.setItem('edukids.lang', state.lang)
+    renderMenu(); renderStars(state.current); renderProgressText();
+    Registry[state.current].render()
+  }
+}
+
+// --- Settings ---
+$('#sound-pill').onclick = () =>{
+  state.sound = !state.sound
+  $('#sound-pill').setAttribute('aria-checked', String(state.sound))
+  $('#sound-pill').textContent = state.sound ? '🔊 '+t('soundOn') : '🔇 '+t('soundOff')
+  if(state.sound) beep(true)
+}
+$('#reset-btn').onclick = () =>{
+  if(confirm('Të fshihet i gjithë progresi?')){
+    state.progress = {}
+    localStorage.removeItem('edukids.progress')
+    renderMenu(); renderStars(state.current); renderProgressText();
+  }
+}
+
+// --- Init ---
+renderMenu();
+navigate(state.current);
+})();
+  </script>
+</body>
+</html>
