@@ -1,0 +1,34 @@
+/* Navigation actions and language switcher */
+.nav-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.lang-switch-wrap {
+  margin-top: 10px;
+}
+.lang-label {
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 700;
+}
+.lang-select {
+  margin-left: 8px;
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 15px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid #27324f;
+}
+
+/* Animation for memory card flip */
+.flip-animate {
+  animation: flipOpen 0.4s cubic-bezier(.4,2,.6,1) both;
+}
+@keyframes flipOpen {
+  0% { transform: scale(1) rotateY(0deg); box-shadow: 0 0 0 0 #22c55e00; }
+  60% { transform: scale(1.12) rotateY(10deg); box-shadow: 0 4px 24px 0 #22c55e44; }
+  100% { transform: scale(1) rotateY(0deg); box-shadow: 0 0 0 0 #22c55e00; }
+}
