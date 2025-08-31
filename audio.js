@@ -308,3 +308,68 @@ const shqipAudioFiles = [
   "audio/SQSQ098.MP3"
 ];
 // Now you can use shqipAudioFiles[0], shqipAudioFiles[1], etc. in your code
+
+// Shfaq të gjitha linqet audio në ekran për testim të shpejtë
+function showAllAudioLinks() {
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '0';
+  container.style.left = '0';
+  container.style.width = '100vw';
+  container.style.maxHeight = '60vh';
+  container.style.overflowY = 'auto';
+  container.style.background = 'rgba(255,255,255,0.98)';
+  container.style.zIndex = '9999';
+  container.style.padding = '10px';
+  container.style.fontSize = '14px';
+  container.style.borderBottom = '2px solid #333';
+  container.innerHTML = '<b>Testo të gjitha linqet audio (klikoni për të luajtur):</b><br><br>';
+
+  // English audio
+  englishAudioFiles.forEach((url, i) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.textContent = `EN #${i+1}`;
+    a.style.marginRight = '8px';
+    a.onclick = function(e) {
+      e.preventDefault();
+      const audio = new Audio(url);
+      audio.play();
+    };
+    container.appendChild(a);
+    if ((i+1)%10 === 0) container.appendChild(document.createElement('br'));
+  });
+  container.appendChild(document.createElement('br'));
+
+  // Shqip audio
+  shqipAudioFiles.forEach((url, i) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.textContent = `SQ #${i+1}`;
+    a.style.marginRight = '8px';
+    a.onclick = function(e) {
+      e.preventDefault();
+      const audio = new Audio(url);
+      audio.play();
+    };
+    container.appendChild(a);
+    if ((i+1)%10 === 0) container.appendChild(document.createElement('br'));
+  });
+
+  // Buton për mbyllje
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Mbyll';
+  closeBtn.style.margin = '10px';
+  closeBtn.onclick = () => container.remove();
+  container.appendChild(document.createElement('br'));
+  container.appendChild(closeBtn);
+
+  document.body.appendChild(container);
+}
+
+// E thërrasim automatikisht kur ngarkohet faqja
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', showAllAudioLinks);
+}
