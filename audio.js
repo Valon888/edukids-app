@@ -305,3 +305,4 @@ const shqipAudioFiles = [
   "audio/SQSQ098.MP3"
 ];
 // Now you can use shqipAudioFiles[0], shqipAudioFiles[1], etc. in your code
+
