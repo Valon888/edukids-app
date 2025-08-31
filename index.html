@@ -484,8 +484,9 @@ const AudioEnglish = (()=>({
         const audio = document.createElement('audio');
         audio.controls = true;
         let rel = file;
+        // Accept both .mp3 and .MP3
         if(file.includes('audio/')) rel = file.substring(file.indexOf('audio/'));
-        else if(file.match(/EMSQ\d+\.mp3$/i)) rel = 'audio/' + file.match(/EMSQ\d+\.mp3$/i)[0];
+        else if(file.match(/EMSQ\d+\.(mp3|MP3)$/)) rel = 'audio/' + file.match(/EMSQ\d+\.(mp3|MP3)$/)[0];
         audio.src = rel;
         row.appendChild(label);
         row.appendChild(audio);
@@ -526,8 +527,9 @@ const AudioShqip = (()=>({
         const audio = document.createElement('audio');
         audio.controls = true;
         let rel = file;
+        // Accept both .mp3 and .MP3
         if(file.includes('audio/')) rel = file.substring(file.indexOf('audio/'));
-        else if(file.match(/SQSQ\d+\.MP3$/i)) rel = 'audio/' + file.match(/SQSQ\d+\.MP3$/i)[0];
+        else if(file.match(/SQSQ\d+\.(mp3|MP3)$/)) rel = 'audio/' + file.match(/SQSQ\d+\.(mp3|MP3)$/)[0];
         audio.src = rel;
         row.appendChild(label);
         row.appendChild(audio);
