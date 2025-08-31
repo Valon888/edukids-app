@@ -488,6 +488,11 @@ const AudioEnglish = (()=>({
         row.appendChild(audio);
         list.appendChild(row);
       });
+        // Luaj automatikisht të parën
+        const firstAudio = list.querySelector('audio');
+        if(firstAudio){
+          setTimeout(()=>{ firstAudio.play && firstAudio.play(); }, 300);
+        }
     }
   }
 }))();
@@ -527,6 +532,11 @@ const AudioShqip = (()=>({
         row.appendChild(audio);
         list.appendChild(row);
       });
+        // Luaj automatikisht të parën
+        const firstAudio = list.querySelector('audio');
+        if(firstAudio){
+          setTimeout(()=>{ firstAudio.play && firstAudio.play(); }, 300);
+        }
     }
   }
 }))();
@@ -1029,6 +1039,11 @@ const AudioLessons = (()=>({
         row.appendChild(audio);
         list.appendChild(row);
       });
+        // Luaj automatikisht të parën
+        const firstAudio = list.querySelector('audio');
+        if(firstAudio){
+          setTimeout(()=>{ firstAudio.play && firstAudio.play(); }, 300);
+        }
     }
   }
 }))();
