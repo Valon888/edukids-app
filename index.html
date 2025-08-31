@@ -483,11 +483,7 @@ const AudioEnglish = (()=>({
         label.textContent = `Ligjërata ${String(i+1).padStart(3,'0')}`;
         const audio = document.createElement('audio');
         audio.controls = true;
-        let rel = file;
-        // Accept both .mp3 and .MP3
-        if(file.includes('audio/')) rel = file.substring(file.indexOf('audio/'));
-        else if(file.match(/EMSQ\d+\.(mp3|MP3)$/)) rel = 'audio/' + file.match(/EMSQ\d+\.(mp3|MP3)$/)[0];
-        audio.src = rel;
+        audio.src = file;
         row.appendChild(label);
         row.appendChild(audio);
         list.appendChild(row);
@@ -526,11 +522,7 @@ const AudioShqip = (()=>({
         label.textContent = `Ligjërata ${String(i+1).padStart(3,'0')}`;
         const audio = document.createElement('audio');
         audio.controls = true;
-        let rel = file;
-        // Accept both .mp3 and .MP3
-        if(file.includes('audio/')) rel = file.substring(file.indexOf('audio/'));
-        else if(file.match(/SQSQ\d+\.(mp3|MP3)$/)) rel = 'audio/' + file.match(/SQSQ\d+\.(mp3|MP3)$/)[0];
-        audio.src = rel;
+        audio.src = file;
         row.appendChild(label);
         row.appendChild(audio);
         list.appendChild(row);
